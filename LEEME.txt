@@ -1,0 +1,326 @@
+================================================================
+ KAKEIBO — Contabilidad personal portable (offline, privada)
+================================================================
+
+1. CÓMO ABRIR LA APP
+---------------------
+Esta aplicación NO necesita instalación, servidor ni conexión a internet.
+
+  1. Copia toda la carpeta "erreKakeibo" (incluyendo "assets/" e
+     "index.html") a tu disco duro externo, junto a tus extractos
+     bancarios.
+  2. Haz doble clic en "index.html" (o ábrelo con Chrome / Edge / Firefox
+     desde el navegador: Archivo > Abrir archivo...).
+  3. Listo. Todo corre en tu navegador, localmente. Ningún dato sale de
+     tu ordenador.
+
+Navegador recomendado: Chrome o Edge (soportan guardar/abrir el archivo
+JSON directamente desde la app, sin diálogos de descarga). Firefox y
+Safari también funcionan, pero usan el modo de descarga/subida manual
+explicado en el punto 2.
+
+
+2. EL ARCHIVO JSON PORTABLE (tu base de datos)
+------------------------------------------------
+Toda tu información (cuentas, movimientos, reglas, presupuestos,
+reflexiones) vive en UN SOLO archivo: "contabilidad_kakeibo.json".
+
+- La primera vez que abras la app verás una pantalla de bienvenida con
+  3 opciones: subir tu primer extracto, abrir un archivo que ya tengas
+  guardado, o cargar un mes de ejemplo ficticio solo para curiosear
+  (se puede borrar con un clic en cualquier momento desde el aviso que
+  aparece arriba de la pantalla). En cuanto tengas algún movimiento, usa
+  el botón "Guardar mi archivo" (arriba a la derecha) para crear tu
+  archivo JSON por primera vez — elige guardarlo en la misma carpeta del
+  disco externo (ej. junto a tus extractos bancarios).
+
+- En Chrome/Edge: tras elegir el archivo una vez, el botón "Guardar mi
+  archivo" escribe directamente sobre ese mismo archivo sin pedir
+  ubicación cada vez (gracias a la File System Access API).
+
+- En navegadores sin esa API (Firefox, Safari): "Guardar mi archivo"
+  descarga el archivo .json a tu carpeta de Descargas. Debes moverlo
+  manualmente a tu disco externo. Para continuar trabajando otro día,
+  usa "Abrir mi archivo" y selecciona ese archivo.
+
+- Indicador de cambios sin guardar: en la barra superior verás un punto
+  AMBAR y el texto "Tienes cambios sin guardar" cuando haya
+  modificaciones pendientes de exportar al JSON. Si intentas cerrar la
+  pestaña con cambios sin guardar, el navegador te avisará con una
+  alerta nativa.
+
+- La app también guarda una copia de trabajo en el almacenamiento local
+  del navegador (localStorage) para que, si cierras la pestaña sin
+  querer, no pierdas el trabajo de la sesión. PERO esta copia es solo
+  de emergencia: el archivo JSON en tu disco es la única fuente de
+  verdad real y portable. Guarda siempre antes de cambiar de ordenador.
+
+- Para pasar tus datos a otro ordenador: copia el archivo
+  "contabilidad_kakeibo.json" junto con la carpeta de la app, y usa
+  "Abrir mi archivo" al llegar al nuevo equipo.
+
+
+3. SUBIR UN EXTRACTO BANCARIO
+----------------------------------
+Sección "Subir Extracto" — sigue los pasos que ves en pantalla:
+1. Elige de qué cuenta es (o crea una nueva). 2. Arrastra el archivo
+.csv a la zona marcada (o haz clic para elegirlo). 3. Revisa el banco
+detectado y pulsa "Ver vista previa". 4. En la tabla de vista previa,
+antes de que se guarde nada, puedes corregir el Tipo de cada movimiento
+nuevo (por ejemplo, marcar como "Traspaso interno" una transferencia
+entre tus propias cuentas que el extracto no distingue de un ingreso) y
+el Pilar Kakeibo, y usar el botón "Crear regla" de cualquier fila para
+que esa palabra clave clasifique al instante esa fila y las demás
+iguales de este mismo archivo. Solo al pulsar "Confirmar e importar" se
+guarda de verdad.
+
+  a) imagin / CaixaBank
+     - Exporta el extracto en CSV desde la app/web de imagin o
+       CaixaBank y arrástralo a la zona de subida.
+     - La app lo reconoce sola por su cabecera
+       "Concepto;Fecha;Importe;Saldo disponible" y por el IBAN, e
+       ignora las líneas de metadatos previas. Si el IBAN coincide con
+       una cuenta que ya tenías, te lo sugiere automáticamente.
+
+  b) Revolut
+     - Exporta el extracto CSV estándar de Revolut (columnas Type,
+       Product, Started Date, Completed Date, Description, Amount,
+       Fee, Currency, State, Balance).
+     - La app lo detecta automáticamente. Puedes marcar si quieres
+       incluir movimientos en estado REVERTED o PENDING. Las comisiones
+       (Fee) se registran como gastos independientes.
+
+  c) Cualquier otro banco (mapeo genérico)
+     - Si el CSV no se reconoce automáticamente, la app te deja elegir
+       el separador, el formato decimal, y qué columna corresponde a
+       Fecha / Concepto / Importe / Saldo.
+     - Al importar, puedes darle un nombre a ese mapeo y se guarda
+       dentro del JSON (visible en Ajustes > "Bancos guardados") — la
+       próxima vez que subas un extracto de ese mismo banco, no hará
+       falta volver a configurarlo.
+
+  Movimientos repetidos: si subes extractos que se solapan (diarios,
+  semanales, mensuales...) la app detecta solo los que ya tenías
+  registrados y los omite automáticamente, sin duplicar nada. Al acabar
+  verás un resumen con cuántos son nuevos y cuántos repetidos.
+
+  Al terminar de importar, la app te ofrece ir directamente a revisar
+  los gastos nuevos sin clasificar o a ver tu resumen.
+
+
+4. CUENTAS, EFECTIVO Y MOVIMIENTOS A MANO
+-----------------------------------------------
+- Ajustes > "Mis cuentas": crea cuentas bancarias o de tipo "Efectivo /
+  Cartera" para registrar gastos en metálico.
+- Mis Gastos > "+ Añadir a mano": anota gastos/ingresos en efectivo o
+  ajustes puntuales que no vienen de un extracto.
+- "Traspaso interno": usa este tipo de movimiento para transferencias
+  entre tus propias cuentas (ej. imagin -> Revolut). Se excluyen
+  automáticamente de los totales de Ingresos/Gastos, pero sí afectan
+  al saldo individual de cada cuenta.
+- "Retención / Anulado": para preautorizaciones que el comercio devuelve
+  en unos días (gasolineras, hoteles, Uber, máquinas expendedoras).
+  Igual que un traspaso, no cuenta como gasto ni ingreso real, pero sí
+  afecta al saldo. La app detecta sola estos pares (mismo importe en
+  positivo y negativo, separados 0-3 días) tanto en la Vista Previa al
+  importar como en Mis Gastos, y te ofrece un botón para marcar los dos
+  movimientos de una vez.
+- Devoluciones / gastos compartidos: al editar un movimiento positivo
+  (ej. un Bizum recibido), marca la casilla "Es una devolución" y
+  asígnale un Pilar Kakeibo — en vez de sumar a Ingresos, restará
+  (neteará) el gasto real de ese pilar.
+- Dividir compra: abre un movimiento y pulsa "Dividir compra" para
+  partirlo en varias líneas con su propio pilar/etiquetas cada una,
+  siempre que la suma de las partes coincida con el importe original
+  (ej. un ticket de súper con cosas necesarias y algún capricho).
+
+
+5. GASTOS POR REVISAR, REGLAS AUTOMÁTICAS Y PRESUPUESTO
+---------------------------------------------------
+- Toda base de datos nueva incluye ya un diccionario de reglas en
+  español con comercios habituales (supermercados, Netflix/Spotify y
+  demás suscripciones, delivery y restauración, gasolineras, farmacias,
+  cultura/cómics, ropa/estética, Bizum/Klarna/PayPal, nóminas y
+  transferencias), así que al subir tu primer extracto ya verás buena
+  parte clasificada sola. Las reglas (y el diccionario por defecto)
+  ignoran símbolos sueltos del banco (*, -, _, ., /) al comparar, así
+  que "GOOGLE *Google On" y "GOOGLE*GOOGLE*ON" se reconocen como el
+  mismo comercio aunque el banco cambie la puntuación de un mes a otro.
+- Sugerencias por historial: cuando un movimiento nuevo no encaja en
+  ninguna regla, la app NUNCA lo clasifica sola — pero sí puede
+  proponer una clasificación con la insignia "Sugerido por historial"
+  (si ya tienes otro movimiento parecido clasificado, mismo signo e
+  importe casi idéntico) o "Sugerido (comercio genérico)" (si el
+  concepto contiene una raíz habitual como MINIMARKET, BURGER, KIABI o
+  AMAZON). En Vista Previa aparece ya preseleccionada, así que si es
+  correcta no hace falta tocar nada al confirmar; en Mis Gastos tiene un
+  botón "Aceptar". El botón "Fijar como regla" junto a cada sugerencia
+  la convierte en una regla permanente de tu diccionario con un clic.
+- En "Mis Gastos" verás un aviso con cuántos gastos tienes por revisar
+  (los que no encajan en ningún comercio conocido, sin pilar asignado
+  todavía). Cada fila sin clasificar tiene un botón "Crear regla": te
+  rellena la palabra clave del comercio, eliges el pilar, y de un clic
+  clasifica ese movimiento y todos los demás pendientes iguales (sin
+  tocar los que ya estuvieran clasificados). También puedes, al editar
+  uno a mano, marcar la casilla "Recordar esta clasificación para la
+  próxima vez" para crear la regla desde ahí.
+- Ajustes > "Reglas automáticas": aquí ves y editas esas reglas (por
+  palabra clave o expresión regular), y puedes "Volver a aplicar las
+  reglas a todo el historial" si cambias o añades una. Si abres un
+  archivo antiguo que no tenía este diccionario, el botón "Restaurar
+  reglas recomendadas por defecto" te lo añade con un clic (no duplica
+  las que ya tengas).
+- En la misma pantalla, "Exportar diccionario (.json)" descarga solo
+  tus reglas (sin tus movimientos ni cuentas) para guardarlas o
+  compartirlas; "Importar diccionario (.json)" carga un diccionario de
+  otra persona o de un archivo antiguo (reconoce tanto el formato propio
+  de la app como un formato estándar en español con campos
+  patron/pilar/subcategoria/etiquetas), dejándote elegir entre:
+    · "Extender / combinar": añade las palabras clave que no tenías,
+      ignora en silencio las que ya tenías igual, y si una palabra clave
+      ya existe pero con otro pilar/etiquetas, te enseña un panel
+      "Reglas en conflicto" para elegir fila a fila (o con los botones
+      "Conservar todas las mías" / "Sustituir todas por las importadas")
+      cuál de las dos versiones quieres quedarte.
+    · "Reemplazar mi diccionario actual": borra el tuyo y pone el
+      importado entero (pide confirmación antes).
+  Al terminar te dice exactamente cuántas reglas nuevas se añadieron,
+  cuántos conflictos se resolvieron (y cómo) y cuántas idénticas se
+  omitieron, y puedes aplicarlo de inmediato a tus gastos por revisar.
+- Subcategorías y etiquetas: al escribirlas (en un movimiento, en
+  "Dividir compra" o en una regla), los campos sugieren las que ya
+  existen a medida que escribes, y al guardar se normalizan solas para
+  no crear duplicados por mayúsculas, tildes o espacios de más (ej.
+  "Cómics", "comics" o " COMICS " se guardan siempre como la misma
+  etiqueta "#comics"). Ajustes > "Subcategorías y Etiquetas" lista
+  todas las que tienes con cuántas veces se usa cada una, y permite
+  seleccionar varias y "Fusionar seleccionadas" en una sola (útil para
+  variantes de redacción distinta que la app no une sola, como "Super"
+  y "Supermercado").
+- Mi Presupuesto: preset inicial "Regla de Cuartos (50/25/25)" ya
+  configurado (Ahorro 25% / Gastos propios 25% con límite de 50€ para
+  #capricho_super / Todo lo demás 50%). Pulsa "Configurar bloques" para
+  elegir una plantilla de partida (50/25/25, 50/30/20 Clásica, Kakeibo 4
+  Pilares + Ahorro, o Personalizado en blanco), marcar los pilares de
+  cada bloque con chips de un clic, y añadir/editar/borrar "mini-sobres"
+  — topes en euros por etiqueta o subcategoría dentro de un bloque (ej.
+  50€ para #capricho_super). Si un mini-sobre vigila una etiqueta
+  concreta y otro bloque cuenta el pilar completo al que pertenece ese
+  movimiento, el importe no se cuenta dos veces: se descuenta solo del
+  bloque general y queda reflejado únicamente en su mini-sobre.
+  Los bloques deben sumar 100%.
+
+
+6. RESUMEN Y REFLEXIÓN
+----------------------------
+- Filtros rápidos de periodo (Hoy / Semana / Mes / Trimestre / Año /
+  Todo) y rango personalizado + filtro por cuenta, en la barra
+  superior — afectan a todas las secciones. Debajo de los botones
+  siempre verás el rango exacto que se está mostrando, por ejemplo
+  "Mostrando: Octubre 2026 (01/10/2026 – 31/10/2026)".
+- Bajo el título "Resumen", un aviso indica hasta qué fecha tienes
+  datos actualizados; si llevas más de 7 días sin importar nada (los
+  puedes cambiar en los ajustes de tu cuenta), aparece un aviso en
+  ámbar invitándote a subir un extracto nuevo. Lo mismo se ve por
+  cuenta en Ajustes > Mis cuentas.
+- Si filtras un periodo sin ningún movimiento, la app distingue si es
+  porque tu último extracto no llega tan lejos (te ofrece subir uno
+  más reciente) o si simplemente no gastaste nada esos días.
+- KPIs, gráfico de pilares, comparativa mes a mes, interanual,
+  detector de gastos recurrentes y gastos hormiga (umbral editable) —
+  todos usan el mismo periodo que tengas seleccionado arriba.
+- Desglose por subcategorías: haz clic en una porción del donut de
+  pilares (o elige uno en el desplegable de al lado) para ver cuánto
+  gastaste en cada subcategoría de ese pilar, con importe, % sobre el
+  pilar, nº de compras y ticket medio. Haz clic en una subcategoría
+  para ir directo a "Mis Gastos" ya filtrado por ella (que también
+  tiene su propio desplegable de Subcategoría, junto al de Pilar).
+- "⚡ Impulso": marca con un clic (en el formulario de un movimiento o
+  en la Vista Previa al importar) las compras hechas por impulso, sin
+  planificar, frente a tus compras conscientes. Junto a "Gastos
+  hormiga" verás cuánto suman y qué % representan sobre el gasto del
+  periodo.
+- Retiradas de cajero: si un movimiento del extracto contiene palabras
+  como CAJERO, REINTEGRO o DISPOSICIÓN EFECTIVO, la Vista Previa lo
+  detecta sola, lo preselecciona como "Traspaso interno" (no es un
+  gasto real, solo cambia de bolsillo) y marca por defecto la casilla
+  "+ Abonar ese efectivo en tu cuenta de Efectivo / Cartera" — créala
+  tú antes o se crea sola la primera vez. Si tienes varias cuentas de
+  efectivo, te deja elegir a cuál. El mismo botón de conversión rápida
+  ("Convertir en retirada de cajero") existe en Mis Gastos para
+  retiradas que ya habías importado antes de esta función, y dentro del
+  formulario de edición de cualquier gasto. Nunca duplica el abono: ni
+  si reimportas el mismo extracto, ni (con un aviso) si ya habías
+  anotado tú a mano ese mismo ingreso en la cuenta de efectivo.
+- Si no hay ningún movimiento todavía, en vez del dashboard verás la
+  pantalla de bienvenida con los 3 primeros pasos.
+- Mi Presupuesto > "Reflexión del mes": escribe tu reflexión mensual
+  Kakeibo (qué salió bien, qué se descontroló, qué viene el próximo
+  mes). Se guarda en el mismo JSON.
+- Exporta la tabla de gastos filtrada a CSV/Excel desde "Mis Gastos"
+  (botón "Descargar como Excel").
+
+
+7. AÑADIR UN NUEVO BANCO EN EL FUTURO
+-----------------------------------------
+No hace falta tocar código para bancos con CSV estándar: usa el
+"Mapeo genérico" al subir el extracto (ver punto 3c) y guarda el
+perfil; luego lo verás en Ajustes > "Bancos guardados".
+
+Si quieres añadir un adaptador fijo en el código (como imagin o
+Revolut) para que se detecte 100% automáticamente:
+  1. Crea un archivo nuevo en "assets/js/adapters/mi_banco.js" siguiendo
+     el patrón de "assets/js/adapters/imagin.js" o "revolut.js".
+  2. Implementa `detect(rawText)` (que reconozca la cabecera o columnas
+     típicas de ese banco) y `parse(rawText, options)` que devuelva
+     `{ rows, iban, error }`, donde cada fila sigue el esquema interno
+     común: `{ date, concept, amount, balance, type, rawRow }`.
+  3. Regístralo con `Adapters.register({ id, label, detect, parse })`.
+  4. Añade `<script src="assets/js/adapters/mi_banco.js"></script>` en
+     "index.html", justo debajo de los otros adaptadores.
+
+
+8. AÑADIR EL ICONO A LA PANTALLA DE INICIO (MÓVIL)
+-------------------------------------------------------
+La app se llama ErreKakeibo y ya incluye su propio icono (estilo Washi
+/ Zen, colores naranja #f89e49 y lavanda #cda3ff) y un `manifest.json`.
+Si copias la carpeta a tu móvil y abres `index.html` en el navegador,
+puedes usar "Añadir a pantalla de inicio" para tener un acceso directo
+con su propio icono. Esto NO instala nada ni cambia cómo funciona la
+app — sigue siendo los mismos archivos locales; solo te da una forma
+más cómoda de abrirla. Ten en cuenta que, en el móvil, "Guardar mi
+archivo" seguirá descargando una copia nueva en vez de sobrescribir el
+archivo directamente (ninguna API de archivos de los navegadores
+móviles lo permite todavía).
+
+
+9. ESTRUCTURA DE CARPETAS
+------------------------------
+erreKakeibo/
+├── index.html                  <- abre este archivo
+├── LEEME.txt                   <- este documento
+├── manifest.json                <- metadatos para "Añadir a pantalla de inicio"
+├── contabilidad_kakeibo.json   <- tu base de datos (se crea al guardar)
+└── assets/
+    ├── css/styles.css          <- estilos (tema claro/oscuro Modern Zen)
+    ├── icon/                   <- icono de la app y favicon (PNG/SVG)
+    ├── vendor/                 <- librerías locales (Chart.js, PapaParse)
+    └── js/
+        ├── utils.js, db.js, dedupe.js, rules.js, budget.js, charts.js
+        ├── adapters/           <- imagin.js, revolut.js, generic.js, index.js
+        ├── ui/                 <- una pestaña por archivo
+        └── app.js              <- arranque y navegación
+
+
+10. PRIVACIDAD
+------------------
+Ningún dato se envía a ningún servidor. Todo el procesamiento (lectura
+de CSV, cálculos, gráficos) ocurre en tu navegador, en tu ordenador.
+El único "archivo" que existe es el JSON que tú guardas en tu disco.
+
+Si vas a usar la app en un ordenador que no es tuyo (de un amigo, de
+un sitio público...), usa el botón "🧹 Limpiar navegador" (abajo en la
+barra lateral, o en Ajustes > Privacidad y datos locales) antes de
+irte. Te deja descargar una copia de seguridad de tus datos primero, y
+luego borra por completo lo que ese navegador recordaba de tu
+contabilidad (no toca tu archivo JSON guardado en el disco).

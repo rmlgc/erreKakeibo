@@ -1,0 +1,15 @@
+# Paquetes/exports generados (no son código fuente, se regeneran cuando haga falta)
+*.zip
+
+# Sistema operativo
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Editores
+.vscode/
+.idea/
+*.swp
+
+# Harnesses de depuración temporales (patrón usado durante el desarrollo)
+index_debug*.html

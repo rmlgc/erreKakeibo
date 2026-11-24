@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f89e49"/>
+      <stop offset="100%" stop-color="#cda3ff"/>
+    </linearGradient>
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="7" result="noise"/>
+      <feColorMatrix in="noise" type="matrix"
+        values="0 0 0 0 1
+                0 0 0 0 1
+                0 0 0 0 1
+                0 0 0 0.05 0"/>
+    </filter>
+    <clipPath id="squircle">
+      <rect x="0" y="0" width="512" height="512" rx="112" ry="112"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#squircle)">
+    <rect x="0" y="0" width="512" height="512" fill="url(#bg)"/>
+    <rect x="0" y="0" width="512" height="512" filter="url(#grain)"/>
+
+    <!-- Enso (circulo zen incompleto, trazo de pincel) -->
+    <path d="M 256 118
+             A 138 138 0 1 1 164 164"
+          fill="none"
+          stroke="#FAF9F6"
+          stroke-width="26"
+          stroke-linecap="round"
+          opacity="0.92"/>
+
+    <!-- Kanji: 簿 (libro de cuentas, el mismo que ya usa la app) -->
+    <text x="256" y="300"
+          font-family="'Yu Mincho','Yu Gothic','Noto Serif JP','MS Mincho','Noto Sans JP',serif"
+          font-size="168"
+          font-weight="700"
+          fill="#1F2421"
+          text-anchor="middle"
+          dominant-baseline="middle">簿</text>
+  </g>
+</svg>

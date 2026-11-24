@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ErreKakeibo — Contabilidad personal portable</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+
+<!-- Icono y manifest (para "Añadir a pantalla de inicio" en móvil; la app sigue
+     funcionando igual abriendo este archivo directamente, sin instalar nada). -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="assets/icon/erre-kakeibo-favicon.svg" type="image/svg+xml">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icon/erre-kakeibo-favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/icon/erre-kakeibo-favicon-16.png">
+<link rel="apple-touch-icon" href="assets/icon/erre-kakeibo-icon-180.png">
+<meta name="theme-color" content="#f89e49">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ErreKakeibo">
+</head>
+<body>
+<div id="app"></div>
+
+<!-- Librerías locales (sin conexión a internet) -->
+<script src="assets/vendor/chart.umd.min.js"></script>
+<script src="assets/vendor/papaparse.min.js"></script>
+
+<!-- Núcleo -->
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/catalog.js"></script>
+<script src="assets/js/defaultRules.js"></script>
+<script src="assets/js/db.js"></script>
+<script src="assets/js/dedupe.js"></script>
+<script src="assets/js/rules.js"></script>
+<script src="assets/js/budget.js"></script>
+<script src="assets/js/suggestions.js"></script>
+<script src="assets/js/cashMirror.js"></script>
+<script src="assets/js/charts.js"></script>
+<script src="assets/js/sampleData.js"></script>
+
+<!-- Adaptadores de banco -->
+<script src="assets/js/adapters/index.js"></script>
+<script src="assets/js/adapters/imagin.js"></script>
+<script src="assets/js/adapters/revolut.js"></script>
+<script src="assets/js/adapters/generic.js"></script>
+
+<!-- UI -->
+<script src="assets/js/ui/widgets.js"></script>
+<script src="assets/js/ui/accounts.js"></script>
+<script src="assets/js/ui/transactions.js"></script>
+<script src="assets/js/ui/import.js"></script>
+<script src="assets/js/ui/rules.js"></script>
+<script src="assets/js/ui/budgetUi.js"></script>
+<script src="assets/js/ui/dashboard.js"></script>
+<script src="assets/js/ui/reflections.js"></script>
+<script src="assets/js/ui/settings.js"></script>
+<script src="assets/js/ui/privacy.js"></script>
+
+<!-- App -->
+<script src="assets/js/app.js"></script>
+</body>
+</html>
