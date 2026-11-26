@@ -99,15 +99,35 @@ const Budget = (() => {
       }
     }
 
+    // Ahorro real del periodo: diferencia entre ingresos efectivos y gastos efectivos.
+    // Se calcula una sola vez y se reutiliza en todos los bloques isSavings para no
+    // requerir que el usuario asigne un pilar concreto a "Ahorro".
+    const kpisForBudget = computeKPIs(transactions);
+    const realSavings = Math.max(0, kpisForBudget.ingresos - kpisForBudget.gastos);
+
     const blocks = preset.blocks.map((block) => {
       const limit = totalIncome * (block.pct / 100);
+
+      // Los bloques de ahorro muestran el ahorro real del periodo (ingresos - gastos)
+      // frente a la meta porcentual. No necesitan pilares: el ahorro es lo que sobra.
+      if (block.isSavings) {
+        const spent = realSavings; // "ahorrado" real
+        const subLimits = (block.subLimits || []).map((sl) => ({
+          ...sl, used: sl.amount, remaining: 0, over: false, // mini-sobres de ahorro son metas, no gastos
+        }));
+        return {
+          ...block, limit, spent, remaining: limit - spent,
+          pctUsed: limit > 0 ? spent / limit : 0,
+          over: false, // ahorrar más de la meta nunca es "excedido"
+          subLimits,
+        };
+      }
+
       let spent = 0;
       const ownTags = new Set(block.tags || []);
       const ownSubcats = new Set(block.subcats || []);
       for (const t of eff) {
         if (!txMatchesBlock(t, block)) continue;
-        // El propio bloque ya reclama este movimiento por SU etiqueta/subcategoría
-        // específica (no solo por el pilar) -> no es doble conteo, es el mismo bloque.
         const matchesOwnSpecific = (t.subcategory && ownSubcats.has(t.subcategory))
           || (t.tags && t.tags.some((tg) => ownTags.has(tg)));
         const earmarkedElsewhere = !matchesOwnSpecific

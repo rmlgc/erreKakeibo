@@ -89,6 +89,8 @@ html {
    hay sitio de sobra, así que el panel entero se queda abierto siempre y el
    botón ni se muestra (evita un control que no haría nada ahí). */
 #btn-toggle-topbar { display: none; }
+.topbar-summary { min-width: 0; flex: 1; }
+.account-pill { display: none; }
 .content { padding: 24px; flex: 1; }
 
 .dirty-indicator { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted); }
@@ -116,6 +118,7 @@ button {
   padding: 18px; box-shadow: var(--shadow);
 }
 .grid { display: grid; gap: 16px; }
+.grid > * { min-width: 0; }
 .grid.cols-2 { grid-template-columns: 1fr 1fr; }
 .grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
 .grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
@@ -139,6 +142,12 @@ table { width: 100%; border-collapse: collapse; font-size: 13px; }
 th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); }
 th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); font-weight: 700; }
 tr:hover td { background: var(--paper); }
+.table-meta {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  padding: 10px 16px; border-bottom: 1px solid var(--border);
+  font-size: 13px; color: var(--text-muted);
+}
+.table-meta strong { color: var(--text); }
 
 input, select, textarea {
   font-family: inherit; font-size: 13px; padding: 7px 10px;
@@ -189,7 +198,8 @@ label { font-size: 12px; font-weight: 600; color: var(--text-muted); display: bl
 
 .unclassified-badge { background: var(--danger); color: #fff; border-radius: 999px; font-size: 11px; padding: 1px 7px; margin-left: 6px; }
 
-.chart-box { height: 280px; position: relative; }
+.chart-box { height: 280px; position: relative; width: 100%; max-width: 100%; overflow: hidden; }
+.card .chart-box { width: auto; max-width: none; margin-left: -18px; margin-right: -18px; padding: 0 6px; }
 .chart-box.small { height: 220px; }
 
 /* --- Icono de ayuda (?) --- */
@@ -225,26 +235,32 @@ label { font-size: 12px; font-weight: 600; color: var(--text-muted); display: bl
 .welcome-wrap h1 { font-size: 24px; margin-bottom: 6px; }
 .welcome-steps { display: flex; flex-direction: column; gap: 14px; margin-top: 28px; text-align: left; }
 .welcome-step {
-  display: flex; align-items: center; gap: 16px;
+  position: relative;
+  display: flex; flex-direction: column;
   background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 18px 20px; box-shadow: var(--shadow);
+  padding: 26px 20px 18px; box-shadow: var(--shadow);
 }
 .step-number {
-  flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%;
+  position: absolute; top: -9px; left: -10px;
+  width: 34px; height: 34px; border-radius: 50%;
   background: var(--accent-orange); color: #fff; font-weight: 700;
   display: flex; align-items: center; justify-content: center;
 }
 .welcome-step.step-secondary .step-number { background: var(--accent-lavender); color: #2a1e3d; }
 .welcome-step.step-tertiary .step-number { background: var(--border); color: var(--text-muted); }
-.welcome-step-body { flex: 1; }
-.welcome-step-body strong { display: block; margin-bottom: 2px; }
+.welcome-step-body { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.welcome-step-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+}
+.welcome-step-header strong { display: block; }
+.welcome-step-header .btn { flex-shrink: 0; }
 
 /* --- Barra de acciones pendientes --- */
 .pending-bar { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
 .pending-item {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   background: var(--card); border: 1px solid var(--accent-orange); border-left-width: 4px;
-  border-radius: 10px; padding: 10px 16px; font-size: 13px;
+  border-radius: 10px; padding: 10px 12px; font-size: 13px; flex-wrap: wrap;
 }
 
 /* --- Banner de datos de ejemplo --- */
@@ -263,7 +279,69 @@ label { font-size: 12px; font-weight: 600; color: var(--text-muted); display: bl
 }
 .dropzone.dragover { border-color: var(--accent-orange); background: rgba(248,158,73,0.08); color: var(--text); }
 .import-steps { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0 18px; font-size: 13px; color: var(--text-muted); }
+
+/* --- Vista previa de importación --- */
+.pv-progress-wrap { display: flex; flex-direction: column; gap: 6px; margin: 8px 0 14px; }
+.pv-toolbar {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  margin-bottom: 10px;
+}
+.pv-toolbar #pv-search { max-width: 280px; }
+.pv-bulk-bar {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  padding: 10px 12px; margin-bottom: 12px;
+  background: var(--paper); border: 1px solid var(--border); border-radius: 10px;
+  font-size: 13px;
+}
+.pv-bulk-bar select { width: auto; max-width: 190px; }
+.pv-table-wrap { max-height: 62vh; overflow-y: auto; overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; }
+.pv-table thead th { position: sticky; top: 0; background: var(--card); z-index: 2; }
+.pv-sticky-actions {
+  position: sticky; bottom: 0; z-index: 5;
+  background: var(--card); border-top: 1px solid var(--border);
+  padding: 12px 0 2px; margin-top: 14px;
+}
+.pv-br-list { display: flex; flex-direction: column; gap: 10px; max-height: 48vh; overflow-y: auto; margin: 12px 0; }
+.pv-br-item {
+  border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: var(--paper);
+}
+.pv-br-orig { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; word-break: break-word; }
 .import-steps span { background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 4px 12px; }
+
+/* --- Kakeibo setup checklist & plan card (Resumen) --- */
+.kakeibo-setup-card, .kakeibo-plan-card { }
+.kakeibo-steps-list { display: flex; flex-direction: column; gap: 8px; }
+.kakeibo-step-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 8px;
+  background: var(--paper); border: 1px solid var(--border); font-size: 13px;
+}
+.kakeibo-step-row.done { opacity: 0.55; }
+.kakeibo-step-check { width: 18px; text-align: center; font-weight: 700; color: var(--accent-orange); flex-shrink: 0; }
+.kakeibo-step-row.done .kakeibo-step-check { color: var(--success, #5FB49C); }
+.kakeibo-step-label { flex: 1; }
+.kakeibo-block-hero { font-size: 16px; font-weight: 700; color: var(--text); }
+.kakeibo-block-hero.positive { color: var(--success, #5FB49C); }
+.kakeibo-block-hero.negative { color: var(--danger); }
+
+/* --- Widgets colapsables y controles de gráfica en Resumen --- */
+details.widget-collapse { padding: 0; overflow: hidden; }
+details.widget-collapse > summary.widget-summary {
+  list-style: none; cursor: pointer; padding: 14px 18px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  font-weight: 700; font-size: 15px; user-select: none;
+}
+details.widget-collapse > summary.widget-summary::-webkit-details-marker { display: none; }
+details.widget-collapse > summary.widget-summary::before {
+  content: '▸'; font-size: 12px; color: var(--text-muted); transition: transform 0.15s ease;
+}
+details.widget-collapse[open] > summary.widget-summary::before { transform: rotate(90deg); }
+details.widget-collapse > summary.widget-summary > span:first-child { flex: 1; }
+details.widget-collapse > .widget-body { padding: 12px 18px 16px; border-top: 1px solid var(--border); }
+.card-bleed { margin-left: -18px; margin-right: -18px; }
+.card-bleed th:first-child, .card-bleed td:first-child { padding-left: 18px; }
+.card-bleed th:last-child, .card-bleed td:last-child { padding-right: 18px; }
+.chart-mode-pills { display: inline-flex; gap: 4px; background: var(--paper); padding: 2px; border-radius: 8px; border: 1px solid var(--border); }
 
 /* --- Subtabbar (variante más discreta del tabbar, para pantallas anidadas) --- */
 .subtabbar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
@@ -304,9 +382,21 @@ label { font-size: 12px; font-weight: 600; color: var(--text-muted); display: bl
      rango, "Más filtros", Abrir/Guardar) se despliega igual que antes al tocar
      "Filtros". */
   #btn-toggle-topbar { display: inline-flex; }
+  .topbar-summary { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+  .topbar-summary #period-label { max-width: 100%; }
+  .account-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--paper); border: 1px solid var(--border); border-radius: 999px;
+    padding: 2px 10px; font-size: 11px; font-weight: 600; color: var(--text-muted);
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .account-pill.active {
+    background: var(--accent-lavender); border-color: var(--accent-lavender); color: #2a1e3d;
+  }
+  .account-pill.is-empty { display: none; }
   #topbar-expanded.collapsed { display: none; }
   #topbar-expanded { margin-top: 6px; }
-  #period-label { max-width: 55vw; }
+  #period-toolbar { padding-bottom: 10px; border-bottom: 1px solid var(--border); }
 
   .grid.cols-4, .grid.cols-5, .grid.cols-3, .grid.cols-2 { grid-template-columns: 1fr; }
 
@@ -323,6 +413,14 @@ label { font-size: 12px; font-weight: 600; color: var(--text-muted); display: bl
      padding Y de las cards se deja igual, se ve bien tal cual. */
   .content { padding: 16px 12px; }
   .card { padding-left: 14px; padding-right: 14px; }
+  details.widget-collapse { padding: 0; }
+  details.widget-collapse > summary.widget-summary { padding: 12px 14px; }
+  details.widget-collapse > .widget-body { padding: 12px 14px 14px; }
+  .card-bleed { margin-left: -14px; margin-right: -14px; }
+  .card-bleed th:first-child, .card-bleed td:first-child { padding-left: 14px; }
+  .card-bleed th:last-child, .card-bleed td:last-child { padding-right: 14px; }
+  .card .chart-box { margin-left: -14px; margin-right: -14px; }
+  .table-meta { padding-left: 14px; padding-right: 14px; }
   .btn { padding-left: 10px; padding-right: 10px; }
   .btn.sm { padding-left: 8px; padding-right: 8px; }
   .modal { padding-left: 16px; padding-right: 16px; }
@@ -330,7 +428,38 @@ label { font-size: 12px; font-weight: 600; color: var(--text-muted); display: bl
   .tag, .pill-badge { padding-left: 8px; padding-right: 8px; }
   .toast { padding-left: 12px; padding-right: 12px; }
   .tabbar button, .subtabbar button { padding-left: 10px; padding-right: 10px; }
+  .welcome-wrap { margin: 8px auto 24px; }
   .welcome-step { padding-left: 14px; padding-right: 14px; }
+  .step-number { left: -7px; }
   .empty-state { padding-left: 14px; padding-right: 14px; }
   .import-steps span { padding-left: 9px; padding-right: 9px; }
+
+  /* Vista previa de importación en móvil: tarjetas compactas sin scroll horizontal */
+  .pv-toolbar #pv-search { max-width: 100%; }
+  .pv-bulk-bar select { width: 100%; max-width: 100%; }
+  .pv-table-wrap { max-height: none; border: none; overflow: visible; }
+  .pv-table thead { display: none; }
+  .pv-table, .pv-table tbody { display: block; }
+  .pv-table tr {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 6px 8px;
+    align-items: center;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .pv-table td { display: block; padding: 0; border-bottom: none; }
+  .pv-table .pv-col-check { grid-column: 1; grid-row: 1; }
+  .pv-table .pv-col-concept { grid-column: 2; grid-row: 1; font-weight: 600; word-break: break-word; }
+  .pv-table .pv-col-amount { grid-column: 3; grid-row: 1; text-align: right; white-space: nowrap; }
+  .pv-table .pv-col-date { grid-column: 1 / -1; grid-row: 2; font-size: 12px; color: var(--text-muted); }
+  .pv-table .pv-col-type { grid-column: 1 / -1; grid-row: 3; }
+  .pv-table .pv-col-pillar { grid-column: 1 / -1; grid-row: 4; }
+  .pv-table .pv-col-actions {
+    grid-column: 1 / -1; grid-row: 5;
+    display: flex; justify-content: flex-end; gap: 8px; margin-top: 2px;
+  }
 }

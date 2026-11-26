@@ -180,9 +180,13 @@ const App = (() => {
         <div class="topbar" style="flex-direction:column;align-items:stretch;gap:6px;">
           <!-- Franja compacta: siempre visible (sticky), incluso con el resto
                colapsado en móvil — es lo que hace falta ver de un vistazo rápido:
-               qué rango de fechas se está mirando y si hay cambios sin guardar. -->
-          <div class="row between" style="gap:8px;">
-            <div class="muted" id="period-label" style="font-size:12px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></div>
+               qué rango de fechas se está mirando, qué cuentas están activas y si
+               hay cambios sin guardar. -->
+          <div class="row between wrap" style="gap:8px; align-items:flex-start;">
+            <div class="topbar-summary">
+              <div class="muted" id="period-label" style="font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></div>
+              <button type="button" class="account-pill" id="mobile-account-pill" title="Toca para filtrar cuentas"></button>
+            </div>
             <div class="row" style="gap:8px; flex-shrink:0;">
               <span class="dirty-indicator" id="dirty-indicator"><span class="dirty-dot" id="dirty-dot"></span><span id="dirty-text">Guardado</span></span>
               <button class="btn sm" id="btn-toggle-topbar">Filtros ▾</button>
@@ -212,6 +216,26 @@ const App = (() => {
       const expanded = document.getElementById('topbar-expanded');
       const collapsed = expanded.classList.toggle('collapsed');
       e.target.textContent = collapsed ? 'Filtros ▾' : 'Filtros ▴';
+    };
+    document.getElementById('mobile-account-pill').onclick = (e) => {
+      e.stopPropagation();
+      const expanded = document.getElementById('topbar-expanded');
+      const toggleBtn = document.getElementById('btn-toggle-topbar');
+      const moreBtn = document.getElementById('btn-more-filters');
+      const morePanel = document.getElementById('more-filters');
+      const wasHidden = (expanded && expanded.classList.contains('collapsed'))
+        || (morePanel && morePanel.style.display === 'none');
+      if (expanded && expanded.classList.contains('collapsed')) {
+        expanded.classList.remove('collapsed');
+        if (toggleBtn) toggleBtn.textContent = 'Filtros ▴';
+      }
+      if (morePanel && morePanel.style.display === 'none') {
+        morePanel.style.display = 'flex';
+        if (moreBtn) moreBtn.classList.add('primary');
+      }
+      accountPanelOpen = wasHidden ? true : !accountPanelOpen;
+      const accPanel = document.getElementById('pf-account-panel');
+      if (accPanel) accPanel.style.display = accountPanelOpen ? 'block' : 'none';
     };
     document.getElementById('btn-open-file').onclick = () => openFileFlow();
     document.getElementById('btn-save-file').onclick = async () => {
@@ -351,6 +375,34 @@ const App = (() => {
     });
     const label = document.getElementById('period-label');
     if (label) label.textContent = describePeriod(periodFilter);
+    updateAccountPill(state, periodFilter);
+  }
+
+  // Píldora compacta visible en móvil junto al rango de fechas: indica siempre si se
+  // están viendo todas las cuentas (con su total), una concreta por nombre o varias.
+  function updateAccountPill(state, pf) {
+    const pill = document.getElementById('mobile-account-pill');
+    if (!pill) return;
+    const total = state.accounts.length;
+    if (total === 0) {
+      pill.classList.add('is-empty');
+      pill.classList.remove('active');
+      pill.textContent = '';
+      return;
+    }
+    pill.classList.remove('is-empty');
+    const selectedCount = pf.accountIds ? pf.accountIds.length : 0;
+    if (selectedCount === 0 || selectedCount === total) {
+      pill.textContent = `Cuentas: Todas (${total}) ▾`;
+      pill.classList.remove('active');
+    } else if (selectedCount === 1) {
+      const acc = state.accounts.find((a) => a.id === pf.accountIds[0]);
+      pill.textContent = `Cuenta: ${acc ? acc.name : '1'} ▾`;
+      pill.classList.add('active');
+    } else {
+      pill.textContent = `Cuentas: ${selectedCount} de ${total} ▾`;
+      pill.classList.add('active');
+    }
   }
 
   // "Todas" (vacío) / una cuenta / varias — el botón del desplegable multi-selección

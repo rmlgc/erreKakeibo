@@ -47,7 +47,7 @@ const UIBudget = (() => {
     const result = Budget.computeBudget(txs, preset, incomeForPeriod);
 
     container.innerHTML = `
-      <div class="row between" style="margin-bottom:12px;">
+      <div class="row between wrap" style="margin-bottom:12px;">
         <h1>Presupuesto por bloques</h1>
         <button class="btn primary" id="btn-edit-preset">Configurar bloques</button>
       </div>
@@ -95,7 +95,7 @@ const UIBudget = (() => {
     container.querySelector('#sel-preset').onchange = (e) => { state.activeBudgetPresetId = e.target.value; DB.markDirty(); render(container, periodFilter); };
     container.querySelector('#sel-income-mode').onchange = (e) => { state.settings.useRealIncome = e.target.value === 'real'; DB.markDirty(); render(container, periodFilter); };
     const incomeInput = container.querySelector('#f-income-base');
-    if (incomeInput) incomeInput.onchange = (e) => { state.settings.incomeBaseMonthly = parseFloat(e.target.value) || 0; DB.markDirty(); render(container, periodFilter); };
+    if (incomeInput) incomeInput.onchange = (e) => { state.settings.incomeBaseMonthly = parseFloat(e.target.value) || 0; state.settings.budgetConfigured = true; DB.markDirty(); render(container, periodFilter); };
     container.querySelector('#btn-edit-preset').onclick = () => openPresetEditor(preset, () => render(container, periodFilter));
   }
 
@@ -272,6 +272,7 @@ const UIBudget = (() => {
             id: b.id, name: b.name, pct: b.pct, pillars: b.pillars, subcats: b.subcats || [],
             tags: b.tags || [], isSavings: !!b.isSavings, subLimits: b.subLimits || [],
           }));
+          state.settings.budgetConfigured = true;
           DB.markDirty();
           Widgets.closeModal();
           onDone();

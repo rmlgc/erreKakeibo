@@ -33,6 +33,7 @@ const DB = (() => {
         incomeBaseMonthly: 0,
         useRealIncome: true,
         staleDataThresholdDays: 7,
+        budgetConfigured: false, // true cuando el usuario ha configurado su ingreso/preset en Mi Presupuesto
       },
     };
   }

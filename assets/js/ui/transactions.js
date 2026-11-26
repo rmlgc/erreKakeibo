@@ -33,7 +33,7 @@ const UITransactions = (() => {
     const retentionPairs = Budget.detectRetentionPairs(periodScoped.filter((t) => !t.isSplitOriginal));
 
     container.innerHTML = `
-      <div class="row between" style="margin-bottom:12px;">
+      <div class="row between wrap" style="margin-bottom:12px;">
         <h1>Mis gastos</h1>
         <div class="row">
           <button class="btn" id="btn-export-csv">Descargar como Excel</button>
@@ -82,13 +82,21 @@ const UITransactions = (() => {
           </label>
         </div>
       </div>
-      <div class="card" style="padding:0; overflow-x:auto;">
-        <table class="tx-table">
-          <thead><tr>
-            <th>Fecha</th><th class="col-account">Cuenta</th><th>Concepto</th><th>Importe</th><th>Tipo</th><th>Pilar</th><th>Etiquetas</th><th></th>
-          </tr></thead>
-          <tbody id="tx-rows"></tbody>
-        </table>
+      <div class="card" style="padding:0;">
+        <div class="table-meta">
+          <span>${txs.length > 500
+            ? `Mostrando <strong>500</strong> de <strong>${txs.length}</strong> movimientos`
+            : `<strong>${txs.length}</strong> ${txs.length === 1 ? 'movimiento' : 'movimientos'}${txs.length !== periodScoped.length ? ` (de ${periodScoped.length} en el periodo)` : ''}`
+          }</span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="tx-table">
+            <thead><tr>
+              <th>Fecha</th><th class="col-account">Cuenta</th><th>Concepto</th><th>Importe</th><th>Tipo</th><th>Pilar</th><th>Etiquetas</th><th></th>
+            </tr></thead>
+            <tbody id="tx-rows"></tbody>
+          </table>
+        </div>
         ${txs.length === 0 ? '<div class="empty-state">No hay gastos con estos filtros.</div>' : ''}
       </div>
     `;

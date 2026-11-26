@@ -19,6 +19,10 @@ const UIRules = (() => {
         <button class="btn primary" id="btn-new-rule">+ Nueva regla</button>
       </div>
       <div class="card" style="padding:0;">
+        <div class="table-meta">
+          <span><strong>${rules.length}</strong> ${rules.length === 1 ? 'regla registrada' : 'reglas registradas'}</span>
+          <span id="rules-active-summary"></span>
+        </div>
         <div style="overflow-x:auto;">
           <table>
             <thead><tr><th>Prioridad</th><th>Si el concepto contiene...</th><th>Tipo</th><th>Pilar</th><th>Etiquetas</th><th>Activa</th><th></th></tr></thead>
@@ -28,6 +32,15 @@ const UIRules = (() => {
         ${rules.length === 0 ? '<div class="empty-state">Todavía no tienes ninguna regla. Se crean solas al clasificar un gasto, o puedes añadir una con el botón de arriba.</div>' : ''}
       </div>
     `;
+    const summaryEl = container.querySelector('#rules-active-summary');
+    const updateSummary = () => {
+      if (rules.length === 0) { summaryEl.textContent = ''; return; }
+      const activeCount = rules.filter((r) => r.active !== false).length;
+      const inactiveCount = rules.length - activeCount;
+      summaryEl.textContent = `${activeCount} ${activeCount === 1 ? 'activa' : 'activas'}${inactiveCount > 0 ? ` · ${inactiveCount} ${inactiveCount === 1 ? 'inactiva' : 'inactivas'}` : ''}`;
+    };
+    updateSummary();
+
     const tbody = container.querySelector('#rules-rows');
     for (const r of rules) {
       const pillarDef = DB.PILLARS.find((p) => p.id === r.pillar);
@@ -42,7 +55,7 @@ const UIRules = (() => {
         <td><button class="btn sm edit-rule">Editar</button> <button class="btn sm danger del-rule">Borrar</button></td>
       `;
       tr.querySelector('.prio').onchange = (e) => { r.priority = parseInt(e.target.value) || 0; DB.markDirty(); };
-      tr.querySelector('.active-cb').onchange = (e) => { r.active = e.target.checked; DB.markDirty(); };
+      tr.querySelector('.active-cb').onchange = (e) => { r.active = e.target.checked; DB.markDirty(); updateSummary(); };
       tr.querySelector('.edit-rule').onclick = () => openRuleForm(r, () => render(container));
       tr.querySelector('.del-rule').onclick = () => {
         Widgets.confirmDialog('¿Eliminar esta regla?', () => {

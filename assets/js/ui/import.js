@@ -222,7 +222,10 @@ const UIImport = (() => {
       row.cashAccountId = null;
     }
 
-    preview = { isNewAccount, newAccountName, dedupeAccountId, adapterId, iban, duplicates, rows: workingRows, filterUnclassified: false };
+    preview = {
+      isNewAccount, newAccountName, dedupeAccountId, adapterId, iban, duplicates,
+      rows: workingRows, filterUnclassified: false, searchText: '', selectedIndices: new Set(),
+    };
     renderPreview(container);
   }
 
@@ -231,53 +234,145 @@ const UIImport = (() => {
     const rows = preview.rows;
     const retentionPairs = Budget.detectRetentionPairs(rows);
     const unclassifiedCount = rows.filter(Rules.isUnclassified).length;
+    const classifiedCount = rows.length - unclassifiedCount;
+    const pct = rows.length ? Math.round((classifiedCount / rows.length) * 100) : 100;
+
     flow.innerHTML = `
       <div class="card">
         <h2>4. Vista previa — revisa antes de guardar</h2>
-        <p class="muted">
-          <strong>${rows.length}</strong> movimiento${rows.length === 1 ? '' : 's'} nuevo${rows.length === 1 ? '' : 's'} listo${rows.length === 1 ? '' : 's'} para importar.
-          ${preview.duplicates > 0 ? ` Movimientos repetidos omitidos automáticamente: ${preview.duplicates} (ya los tenías registrados).` : ''}
-        </p>
+        <div class="pv-progress-wrap">
+          <div class="row between wrap" style="gap:8px;font-size:13px;">
+            <span id="pv-progress-text">
+              <strong>${classifiedCount}</strong> de <strong>${rows.length}</strong> clasificados · faltan <strong>${unclassifiedCount}</strong>
+            </span>
+            ${preview.duplicates > 0 ? `<span class="muted">Repetidos omitidos: ${preview.duplicates}</span>` : ''}
+          </div>
+          <div class="progress-bar"><div id="pv-progress-fill" style="width:${pct}%;background:var(--accent-orange);"></div></div>
+        </div>
         ${rows.length > 0 ? `
-          <label class="row" style="gap:6px;align-items:center;">
-            <input type="checkbox" id="pv-filter-unclassified" ${preview.filterUnclassified ? 'checked' : ''} ${unclassifiedCount === 0 ? 'disabled' : ''}>
-            Mostrar solo sin clasificar (${unclassifiedCount})
-            ${Widgets.helpIcon('Oculta de esta lista los movimientos que ya tienen pilar asignado (por una regla o manualmente), para que no tengas que hacer scroll entre todos para encontrar los que faltan por revisar. No afecta a lo que se va a guardar: se guardan igualmente todos los movimientos, estén o no filtrados aquí.')}
-          </label>
+          <div class="pv-toolbar">
+            <input id="pv-search" type="search" placeholder="Buscar por concepto..." value="${Widgets.escapeHtml(preview.searchText || '')}">
+            <label class="row" style="gap:6px;align-items:center;margin:0;">
+              <input type="checkbox" style="width:auto;" id="pv-filter-unclassified" ${preview.filterUnclassified ? 'checked' : ''} ${unclassifiedCount === 0 ? 'disabled' : ''}>
+              <span>Mostrar solo sin clasificar (<span id="pv-unclassified-count">${unclassifiedCount}</span>)</span>
+              ${Widgets.helpIcon('Oculta de esta lista los movimientos que ya tienen pilar asignado (por una regla o manualmente), para que no tengas que hacer scroll entre todos para encontrar los que faltan por revisar. No afecta a lo que se va a guardar: se guardan igualmente todos los movimientos, estén o no filtrados aquí.')}
+            </label>
+          </div>
+          <div class="pv-bulk-bar" id="pv-bulk-bar">
+            <label class="row" style="gap:6px;align-items:center;margin:0;">
+              <input type="checkbox" style="width:auto;" id="pv-select-all">
+              <span>Seleccionar visibles (<span id="pv-visible-count">0</span>)</span>
+              <span class="muted" id="pv-selected-count"></span>
+            </label>
+            <div class="row wrap" style="gap:8px;">
+              <select id="pv-bulk-type">
+                <option value="">— Tipo (sin cambios) —</option>
+                <option value="gasto">Gasto</option>
+                <option value="ingreso">Ingreso</option>
+                <option value="traspaso">Traspaso interno</option>
+                <option value="retencion">Retención / Anulado</option>
+              </select>
+              <select id="pv-bulk-pillar">
+                <option value="">— Elegir pilar —</option>
+                ${DB.PILLARS.map((p) => `<option value="${p.id}">${p.name}</option>`).join('')}
+              </select>
+              <button class="btn sm primary" id="pv-bulk-apply" disabled>Aplicar a seleccionadas</button>
+            </div>
+          </div>
         ` : ''}
         ${retentionSuggestionsHtml(retentionPairs)}
         ${rows.length === 0 ? '<div class="empty-state">No hay movimientos nuevos que importar (todos ya estaban registrados).</div>' : `
-          <div style="overflow-x:auto;">
-            <table>
-              <thead><tr><th>Fecha</th><th>Concepto</th><th>Importe</th><th>Tipo</th><th>Pilar / Etiquetas</th><th></th></tr></thead>
+          <div class="pv-table-wrap">
+            <table class="pv-table">
+              <thead><tr>
+                <th style="width:32px;"></th>
+                <th>Fecha</th><th>Concepto</th><th>Importe</th><th>Tipo</th><th>Pilar / Etiquetas</th><th></th>
+              </tr></thead>
               <tbody id="preview-rows"></tbody>
             </table>
           </div>
-          ${preview.filterUnclassified && unclassifiedCount === 0 ? '<div class="empty-state">Ya no queda ninguno sin clasificar en este lote.</div>' : ''}
+          <div class="empty-state" id="pv-empty-filtered" style="display:none;"></div>
         `}
-        <div class="row between" style="margin-top:16px;">
+        <div class="row between pv-sticky-actions">
           <button class="btn ghost" id="btn-preview-back">‹ Volver</button>
           <button class="btn primary" id="btn-confirm-import" ${rows.length === 0 ? 'disabled' : ''}>Confirmar e importar</button>
         </div>
       </div>
     `;
+
+    const progressTextEl = flow.querySelector('#pv-progress-text');
+    const progressFillEl = flow.querySelector('#pv-progress-fill');
+    const unclassCountEl = flow.querySelector('#pv-unclassified-count');
     const filterCb = flow.querySelector('#pv-filter-unclassified');
-    if (filterCb) {
-      filterCb.onchange = (e) => {
-        preview.filterUnclassified = e.target.checked;
-        renderPreview(container);
-      };
-    }
+    const searchInput = flow.querySelector('#pv-search');
+    const selectAllCb = flow.querySelector('#pv-select-all');
+    const visibleCountEl = flow.querySelector('#pv-visible-count');
+    const selectedCountEl = flow.querySelector('#pv-selected-count');
+    const bulkApplyBtn = flow.querySelector('#pv-bulk-apply');
     const tbody = flow.querySelector('#preview-rows');
-    if (tbody) {
+    const emptyFilteredEl = flow.querySelector('#pv-empty-filtered');
+
+    function getVisibleEntries() {
+      const needle = Utils.normalizeText(preview.searchText || '');
+      const list = [];
       rows.forEach((r, i) => {
         if (preview.filterUnclassified && !Rules.isUnclassified(r)) return;
+        if (needle && !Utils.normalizeText(r.concept).includes(needle)) return;
+        list.push({ row: r, index: i });
+      });
+      return list;
+    }
+
+    function updateStats() {
+      const unclass = rows.filter(Rules.isUnclassified).length;
+      const classif = rows.length - unclass;
+      const pctNow = rows.length ? Math.round((classif / rows.length) * 100) : 100;
+      if (progressTextEl) {
+        progressTextEl.innerHTML = `<strong>${classif}</strong> de <strong>${rows.length}</strong> clasificados · faltan <strong>${unclass}</strong>`;
+      }
+      if (progressFillEl) progressFillEl.style.width = `${pctNow}%`;
+      if (unclassCountEl) unclassCountEl.textContent = String(unclass);
+      if (filterCb) filterCb.disabled = unclass === 0 && !preview.filterUnclassified;
+    }
+
+    function updateSelectionUi() {
+      if (!selectAllCb || !tbody) return;
+      const visibleCheckboxes = Array.from(tbody.querySelectorAll('.pv-row-check'));
+      const visibleTotal = visibleCheckboxes.length;
+      const visibleChecked = visibleCheckboxes.filter((cb) => cb.checked).length;
+      if (visibleCountEl) visibleCountEl.textContent = String(visibleTotal);
+      selectAllCb.checked = visibleTotal > 0 && visibleChecked === visibleTotal;
+      selectAllCb.indeterminate = visibleChecked > 0 && visibleChecked < visibleTotal;
+      const selCount = preview.selectedIndices.size;
+      if (selectedCountEl) selectedCountEl.textContent = selCount > 0 ? `· ${selCount} marcada${selCount === 1 ? '' : 's'}` : '';
+      if (bulkApplyBtn) bulkApplyBtn.disabled = selCount === 0;
+    }
+
+    function updateEmptyFiltered(visibleLen) {
+      if (!emptyFilteredEl) return;
+      if (visibleLen === 0 && rows.length > 0) {
+        emptyFilteredEl.textContent = preview.searchText
+          ? 'Ningún movimiento coincide con tu búsqueda.'
+          : 'Ya no queda ninguno sin clasificar en este lote.';
+        emptyFilteredEl.style.display = '';
+      } else {
+        emptyFilteredEl.style.display = 'none';
+      }
+    }
+
+    function renderRows() {
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      const entries = getVisibleEntries();
+      for (const { row: r, index: i } of entries) {
         const tr = document.createElement('tr');
+        tr.dataset.i = String(i);
         tr.innerHTML = `
-          <td>${Utils.fmtDate(r.date)}</td>
-          <td>${Widgets.escapeHtml(r.concept)}</td>
-          <td style="color:${r.amount < 0 ? 'var(--danger)' : 'var(--success)'};font-weight:600;">${Utils.fmtMoney(r.amount)}</td>
-          <td>
+          <td class="pv-col-check"><input type="checkbox" class="pv-row-check" data-i="${i}" style="width:auto;" ${preview.selectedIndices.has(i) ? 'checked' : ''}></td>
+          <td class="pv-col-date">${Utils.fmtDate(r.date)}</td>
+          <td class="pv-col-concept">${Widgets.escapeHtml(r.concept)}</td>
+          <td class="pv-col-amount" style="color:${r.amount < 0 ? 'var(--danger)' : 'var(--success)'};font-weight:600;">${Utils.fmtMoney(r.amount)}</td>
+          <td class="pv-col-type">
             <select class="pv-type" data-i="${i}">
               <option value="gasto" ${r.type === 'gasto' ? 'selected' : ''}>Gasto</option>
               <option value="ingreso" ${r.type === 'ingreso' ? 'selected' : ''}>Ingreso</option>
@@ -286,59 +381,145 @@ const UIImport = (() => {
             </select>
             ${r.isAtmWithdrawal ? renderAtmWithdrawalControls(r, i) : ''}
           </td>
-          <td>
+          <td class="pv-col-pillar">
             <select class="pv-pillar" data-i="${i}">
               <option value="">— Sin clasificar —</option>
               ${DB.PILLARS.map((p) => `<option value="${p.id}" ${r.pillar === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
             </select>
             ${(r.tags || []).map((tg) => `<span class="tag">${Widgets.escapeHtml(tg)}</span>`).join(' ')}
-            ${r.suggestion ? `<div><span class="tag" style="background:var(--accent-lavender);color:#2a1e3d;border-color:var(--accent-lavender);" title="${Widgets.escapeHtml(r.suggestion.reason)}">${r.suggestion.badge}</span></div>` : ''}
+            ${r.suggestion ? `<div class="pv-suggestion-wrap"><span class="tag" style="background:var(--accent-lavender);color:#2a1e3d;border-color:var(--accent-lavender);" title="${Widgets.escapeHtml(r.suggestion.reason)}">${r.suggestion.badge}</span></div>` : ''}
           </td>
-          <td>
+          <td class="pv-col-actions">
             <button class="btn sm pv-create-rule" data-i="${i}">${r.suggestion ? 'Fijar como regla' : 'Crear regla'}</button>
             <button class="btn sm ${(r.tags || []).some((t) => Utils.foldKey(t) === '#impulso') ? 'primary' : ''} pv-impulso" data-i="${i}" title="Márcalo si fue una compra por impulso, sin planificar">⚡</button>
           </td>
         `;
         tbody.appendChild(tr);
+      }
+
+      tbody.querySelectorAll('.pv-row-check').forEach((cb) => {
+        cb.onchange = (e) => {
+          const idx = Number(e.target.dataset.i);
+          if (e.target.checked) preview.selectedIndices.add(idx);
+          else preview.selectedIndices.delete(idx);
+          updateSelectionUi();
+        };
       });
+
+      const handleRowChange = (tr, idx) => {
+        const row = preview.rows[idx];
+        row.manuallyEdited = true;
+        row.suggestion = null;
+        const sugEl = tr.querySelector('.pv-suggestion-wrap');
+        if (sugEl) sugEl.remove();
+        const ruleBtn = tr.querySelector('.pv-create-rule');
+        if (ruleBtn) ruleBtn.textContent = 'Crear regla';
+        updateStats();
+        if (preview.filterUnclassified && !Rules.isUnclassified(row)) {
+          preview.selectedIndices.delete(idx);
+          tr.remove();
+          updateSelectionUi();
+          updateEmptyFiltered(tbody.children.length);
+        }
+      };
+
       tbody.querySelectorAll('.pv-type').forEach((sel) => {
         sel.onchange = (e) => {
-          const row = preview.rows[Number(e.target.dataset.i)];
-          row.type = e.target.value;
-          row.manuallyEdited = true;
-          const hadSuggestion = !!row.suggestion;
-          row.suggestion = null;
-          if (hadSuggestion || preview.filterUnclassified) renderPreview(container); // quita la insignia ya obsoleta / actualiza el filtro
+          const idx = Number(e.target.dataset.i);
+          preview.rows[idx].type = e.target.value;
+          handleRowChange(e.target.closest('tr'), idx);
         };
       });
+
       tbody.querySelectorAll('.pv-pillar').forEach((sel) => {
         sel.onchange = (e) => {
-          const row = preview.rows[Number(e.target.dataset.i)];
-          row.pillar = e.target.value || null;
-          row.manuallyEdited = true;
-          const hadSuggestion = !!row.suggestion;
-          row.suggestion = null;
-          if (hadSuggestion || preview.filterUnclassified) renderPreview(container);
+          const idx = Number(e.target.dataset.i);
+          preview.rows[idx].pillar = e.target.value || null;
+          handleRowChange(e.target.closest('tr'), idx);
         };
       });
+
       tbody.querySelectorAll('.pv-create-rule').forEach((btn) => {
         btn.onclick = () => openQuickRuleModal(container, Number(btn.dataset.i));
       });
+
       tbody.querySelectorAll('.pv-impulso').forEach((btn) => {
-        btn.onclick = () => {
-          const row = preview.rows[Number(btn.dataset.i)];
+        btn.onclick = (e) => {
+          const idx = Number(e.target.dataset.i);
+          const row = preview.rows[idx];
           const has = (row.tags || []).some((t) => Utils.foldKey(t) === '#impulso');
-          row.tags = has ? row.tags.filter((t) => Utils.foldKey(t) !== '#impulso') : [...(row.tags || []), Catalog.canonicalTag(DB.get(), '#impulso')];
-          renderPreview(container);
+          row.tags = has
+            ? row.tags.filter((t) => Utils.foldKey(t) !== '#impulso')
+            : [...(row.tags || []), Catalog.canonicalTag(DB.get(), '#impulso')];
+          e.target.classList.toggle('primary', !has);
         };
       });
+
       tbody.querySelectorAll('.pv-mirror-cash').forEach((cb) => {
         cb.onchange = (e) => { preview.rows[Number(e.target.dataset.i)].mirrorToCash = e.target.checked; };
       });
       tbody.querySelectorAll('.pv-cash-account').forEach((sel) => {
         sel.onchange = (e) => { preview.rows[Number(e.target.dataset.i)].cashAccountId = e.target.value; };
       });
+
+      updateSelectionUi();
+      updateEmptyFiltered(entries.length);
     }
+
+    renderRows();
+
+    if (filterCb) {
+      filterCb.onchange = (e) => {
+        preview.filterUnclassified = e.target.checked;
+        renderRows();
+        updateStats();
+      };
+    }
+    if (searchInput) {
+      searchInput.oninput = (e) => {
+        preview.searchText = e.target.value;
+        renderRows();
+      };
+    }
+    if (selectAllCb && tbody) {
+      selectAllCb.onchange = (e) => {
+        const checked = e.target.checked;
+        tbody.querySelectorAll('.pv-row-check').forEach((cb) => {
+          cb.checked = checked;
+          const idx = Number(cb.dataset.i);
+          if (checked) preview.selectedIndices.add(idx);
+          else preview.selectedIndices.delete(idx);
+        });
+        updateSelectionUi();
+      };
+    }
+    if (bulkApplyBtn) {
+      bulkApplyBtn.onclick = () => {
+        const newType = flow.querySelector('#pv-bulk-type').value;
+        const newPillar = flow.querySelector('#pv-bulk-pillar').value;
+        if (!newType && !newPillar) {
+          Widgets.toast('Elige un Tipo o un Pilar para aplicar en lote', 'info');
+          return;
+        }
+        const count = preview.selectedIndices.size;
+        if (count === 0) return;
+        for (const idx of preview.selectedIndices) {
+          const row = preview.rows[idx];
+          if (!row) continue;
+          if (newType) row.type = newType;
+          if (newPillar) row.pillar = newPillar;
+          row.manuallyEdited = true;
+          row.suggestion = null;
+        }
+        preview.selectedIndices.clear();
+        flow.querySelector('#pv-bulk-type').value = '';
+        flow.querySelector('#pv-bulk-pillar').value = '';
+        renderRows();
+        updateStats();
+        Widgets.toast(`Actualizados ${count} movimiento${count === 1 ? '' : 's'}`, 'success');
+      };
+    }
+
     flow.querySelectorAll('.pv-mark-retencion').forEach((btn) => {
       btn.onclick = () => {
         const pair = retentionPairs[Number(btn.dataset.pair)];
@@ -531,6 +712,8 @@ const UIImport = (() => {
   }
 
   function renderResult(container, addedCount, duplicates, accName, unclassifiedCount, mirrorsCreated = 0) {
+    const state = DB.get();
+    const showKakeiboPrompt = !state.settings.budgetConfigured;
     container.innerHTML = `
       <div class="welcome-wrap">
         <h1>¡Listo!</h1>
@@ -545,6 +728,12 @@ const UIImport = (() => {
             <button class="btn ${unclassifiedCount > 0 ? '' : 'primary'}" id="btn-go-summary">Ver mi resumen ahora</button>
             <button class="btn ghost" id="btn-import-more">Subir otro extracto</button>
           </div>
+          ${showKakeiboPrompt ? `<div class="pending-bar" style="margin-top:14px;">
+            <div class="pending-item">
+              <span>Siguiente paso: define tu meta de ahorro Kakeibo <span class="muted">(2 min)</span></span>
+              <button class="btn sm primary" id="btn-go-budget">Configurar mi plan →</button>
+            </div>
+          </div>` : ''}
         </div>
       </div>
     `;
@@ -552,6 +741,8 @@ const UIImport = (() => {
     if (reviewBtn) reviewBtn.onclick = () => App.goToTab('gastos', { unclassifiedOnly: true });
     container.querySelector('#btn-go-summary').onclick = () => App.goToTab('resumen');
     container.querySelector('#btn-import-more').onclick = () => render(container);
+    const budgetBtn = container.querySelector('#btn-go-budget');
+    if (budgetBtn) budgetBtn.onclick = () => App.goToTab('presupuesto', { subtab: 'presupuesto' });
   }
 
   return { render };
